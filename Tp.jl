@@ -5,16 +5,16 @@ coordinates = coordinates[:,2:end]
 
 elements3 = try
     data = readdlm("elements3.dat")
-    data[:,2:end]
+    convert(Array{Int,2}, data[:, 2:end])
 catch
-    zeros(0, 0)
+    zeros(Int, 0, 0)
 end
 
 elements4 = try
     data = readdlm("elements4.dat")
-    data[:,2:end]
+    convert(Array{Int,2}, data[:, 2:end])
 catch
-    zeros(0, 0)
+    zeros(Int, 0, 0)
 end
 
 neumann = try
@@ -40,8 +40,9 @@ function stima3(vertices)
 end
 
 function stima4(vertices)
-    D_Phi = [vertices[2, :] - vertices[1, :]; vertices[4, :] - vertices[1, :]]'
-    B = inv(D_Phi' * D_Phi)
+    D_Phi = transpose([vertices[2, :] - vertices[1, :]; vertices[4, :] - vertices[1, :]])
+    B = (D_Phi'* D_Phi)
+    print(B)
     C1 = [2 -2; -2  2] * B[1  1] + [3 0; 0 -3] * B[1 2] + [2 1; 1 2] * B[2 2]
     C2 = [-1 1; 1 -1] .* B[1 1] .+ [-3 0; 0 3] .* B[1 2] .+ [-1 -2; -2 -1] .* B[2 2]
     M = det(D_Phi) * [C1 C2; C2 C1] / 6
@@ -68,14 +69,19 @@ function show(elements3, elements4, coordinates, u)
     view(10, 40)
 end
 
-elements3[1, :]
-# Assembly
-for j in 1:size(elements3, 1)
-    A[elements3[j, :] elements3[j, :]] += stima3(coordinates[elements3[j, :], :])
+for j in 1:length(elements3[:,1])
+    indices = elements3[j, :]
+    A[indices, indices] += stima3(coordinates[indices, :])
 end
 
-for j in 1:size(elements4, 1)
-    A[elements4[j, :], elements4[j, :]] += stima4(coordinates[elements4[j, :], :])
+a = [elements4[2, :],:][2,:] 
+
+stima4(coordinates[elements4[2, :],:])
+#stima4(coordinates[[2,1], :])
+
+for j in 1:length(elements4[:,1])
+    indices = elements4[j, :]
+    A[indices, indices] += stima4(coordinates[indices, :])
 end
 
 # Volume Forces
