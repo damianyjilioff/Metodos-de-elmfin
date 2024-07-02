@@ -1,7 +1,8 @@
 using LinearAlgebra,DelimitedFiles, SparseArrays
 using Plots
+using Meshes
 coordinates = readdlm("coordinates.dat")
-coordinates = coordinates[:,2:end]
+#coordinates = coordinates[:,2:end]
 
 elements3 = try
     data = readdlm("elements3.dat")
@@ -19,7 +20,7 @@ end
 
 neumann = try
     data = readdlm("neumann.dat")
-    data[:,2:end]
+    convert(Array{Int,2}, data[:, 2:end])
 catch
     zeros(0, 0)
 end
@@ -33,15 +34,17 @@ A = spzeros(size(coordinates, 1), size(coordinates, 1))
 b = spzeros(size(coordinates, 1), 1)
 
 function stima3(vertices)
-    d = size(vertices, 2)
+    d = size(vertices,2)
     G = [ones(1, d+1); vertices'] \ [zeros(1, d); I(d)]
     M = det([ones(1, d+1); vertices']) * G * G' / prod(1:d)
     return M
 end
+#Esto era el D_phi antes pero dado el Paper creo que la modificación con Vcat es la posta pero por las dudas lo dejo
+#D_phi = ([vertices[2, :] - vertices[1, :]; vertices[4, :] - vertices[1, :]])
 
 function stima4(vertices)
-    D_Phi = ([vertices[2, :][1] - vertices[1, :][1]; vertices[4, :][1] - vertices[1, :][1]])
-    B = (D_Phi)*(D_Phi)'
+    D_Phi = vcat((vertices[2, :] - vertices[1, :])',(vertices[4, :] - vertices[1, :])')
+    B = (D_Phi)#*(D_Phi)' Creo que no hace falta ahora multiplicar por la trasp porque lo haces de una con vcat
     print((B))
     C1 = [2 -2; -2  2] .* B[1 , 1] + [3 0; 0 -3] .* B[1 ,2] + [2 1; 1 2] .* B[2, 2]
     print(C1)
@@ -49,8 +52,7 @@ function stima4(vertices)
     M = det(D_Phi) * [C1 C2; C2 C1] / 6
     return M
 end
-indices = elements4[1, :]
-stima4(coordinates[indices,:])
+
 function u_d(x)
     return zeros(size(x, 1))
 end
@@ -80,10 +82,9 @@ end
 
 for j in 1:length(elements4[:,1])
     indices = elements4[j, :]
-    print(coordinates[indices, :])
     A[indices, indices] += stima4(coordinates[indices, :])
 end
-display(A)
+
 # Volume Forces
 for j in 1:length(elements3[1,:])
     for i in 1:length(elements3[1,:])
@@ -99,14 +100,14 @@ end
 
 norm(coordinates[neumann[1, :], :] - coordinates[neumann[1, :], :]) 
 
-#g(sum(coordinates[neumann[1, :], :], dims=1) / 2) / 2
- #Neumann conditions
-(g(sum(coordinates[Integer.(neumann[1, :]), :]) / 2) / 2)
-#for j in 1:length(neumann[1,:])
-#    for i in 1:length(neumann[1,:])
- #   b[neumann[j, i]] += (norm(coordinates[Integer.(neumann[j, 1]), :] - coordinates[Integer.(neumann[j ,2]), :]) * (g(sum(coordinates[Integer.(neumann[j, :]), :]) / 2) / 2)[1])
- #   end
-#end
+g(sum(coordinates[neumann[1, :], :], dims=1) / 2) / 2
+#Neumann conditions
+
+for j in 1:length(neumann[1,:])
+    for i in 1:length(neumann[1,:])
+        b[neumann[j, i]] += (norm(coordinates[Integer.(neumann[j, 1]), :] - coordinates[Integer.(neumann[j ,2]), :]) * (g(sum(coordinates[Integer.(neumann[j, :]), :]) / 2) / 2)[1])
+    end
+end
 
 # Dirichlet conditions
 u = spzeros(size(coordinates, 1))
