@@ -40,16 +40,17 @@ function stima3(vertices)
 end
 
 function stima4(vertices)
-    D_Phi = transpose([vertices[2, :] - vertices[1, :]; vertices[4, :] - vertices[1, :]])
-    print(typeof(D_Phi))
-    B = (D_Phi)'* (D_Phi)
-    print(B)
+    D_Phi = ([vertices[2, :][1] - vertices[1, :][1]; vertices[4, :][1] - vertices[1, :][1]])
+    B = (D_Phi)*(D_Phi)'
+    print((B))
     C1 = [2 -2; -2  2] .* B[1 , 1] + [3 0; 0 -3] .* B[1 ,2] + [2 1; 1 2] .* B[2, 2]
-    #C2 = [-1 1; 1 -1] .* B[1 1] .+ [-3 0; 0 3] .* B[1 2] .+ [-1 -2; -2 -1] .* B[2 2]
-    #M = det(D_Phi) * [C1 C2; C2 C1] / 6
-    #return M
+    print(C1)
+    C2 = [-1 1; 1 -1] .* B[1 , 1] .+ [-3 0; 0 3] .* B[1, 2] .+ [-1 -2; -2 -1] .* B[2, 2]
+    M = det(D_Phi) * [C1 C2; C2 C1] / 6
+    return M
 end
-
+indices = elements4[1, :]
+stima4(coordinates[indices,:])
 function u_d(x)
     return zeros(size(x, 1))
 end
